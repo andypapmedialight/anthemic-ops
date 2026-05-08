@@ -1,0 +1,80 @@
+name: Deploy
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "nginx/sites-available/anthemic-hub.conf"
+      - "scripts/droplet/anthemic-nginx-apply.sh"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-anthemic-ops
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint nginx config (basic)
+        run: |
+          if grep -RInE 'TODO|FIXME' nginx/sites-available/ ; then
+            echo "Refusing to deploy a config with TODO/FIXME markers."
+            exit 1
+          fi
+          # Light syntactic sanity check (does not start nginx, just helps catch mistakes early)
+          if ! grep -q 'server_name' nginx/sites-available/anthemic-hub.conf ; then
+            echo "Missing server_name in anthemic-hub.conf"
+            exit 1
+          fi
+
+      - name: Install SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Configure SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${DEPLOY_PORT}" "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Upload candidate config
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          RSYNC_SSH="ssh -p ${DEPLOY_PORT}"
+          DEST="${DEPLOY_USER}@${DEPLOY_HOST}:incoming-nginx/sites-available/"
+          rsync -avz -e "${RSYNC_SSH}" \
+            nginx/sites-available/anthemic-hub.conf \
+            "${DEST}anthemic-hub.conf"
+
+      - name: Apply on Droplet
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            'sudo /usr/local/bin/anthemic-nginx-apply.sh'
+
+      - name: Smoke test (public HTTPS)
+        run: |
+          set -euo pipefail
+          curl -sfI --retry 3 --retry-delay 2 "https://anthemic-developments.com/" | head -1 | grep -q "200"
+          curl -sfI --retry 3 --retry-delay 2 "https://anthemic-developments.com/setlist/" | head -1 | grep -q "200"
+          code=$(curl -s -o /dev/null -w "%{http_code}" "https://anthemic-developments.com/api/v1/songs")
+          if [[ "${code}" != "401" && "${code}" != "403" ]]; then
+            echo "Unexpected API HTTP status: ${code} (expected 401 or 403)"
+            exit 1
+          fi
