@@ -29,7 +29,7 @@ scripts/droplet/
    - runs `nginx -t`,
    - on failure, restores the backup and exits 1 (no reload),
    - on success, `systemctl reload nginx`.
-4. CI smoke-tests the public URLs (`/`, `/setlist/`, `/api/v1/songs`).
+4. CI smoke-tests the public URLs (`/`, `/setlist/`, `/bass/`, `/api/v1/songs`). **`/bass/` needs files on disk** from an **anthemic-hub** deploy; if ops runs alone first, `/bass/` may 404 until hub has deployed.
 
 Manual: **Actions → Deploy → Run workflow**.
 
