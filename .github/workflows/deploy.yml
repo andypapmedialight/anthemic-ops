@@ -79,7 +79,13 @@ jobs:
             c=$(curl -sS -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 2 "${url}")
             [[ "${c}" == "200" ]] || { echo "${url} returned HTTP ${c}"; exit 1; }
           done
-          title_bass=$(curl -sS --retry 3 --retry-delay 2 "https://anthemic-developments.com/bass/" | sed -n 's/.*<title>\([^<]*\)<\/title>.*/\1/p' | head -1)
+          # Slurp body first: curl|head or curl|grep -q can SIGPIPE curl (exit 23) under set -o pipefail.
+          html_bass=$(curl -sS --retry 3 --retry-delay 2 "https://anthemic-developments.com/bass/")
+          if [[ "${html_bass}" =~ \<title\>([^<]+)\</title\> ]]; then
+            title_bass="${BASH_REMATCH[1]}"
+          else
+            title_bass=""
+          fi
           tlc=${title_bass,,}
           [[ "${tlc}" == *bass* ]] || { echo "/bass/ title missing bass; got: ${title_bass:-<empty>}"; exit 1; }
           code=$(curl -sS -o /dev/null -w "%{http_code}" "https://anthemic-developments.com/api/v1/songs")
