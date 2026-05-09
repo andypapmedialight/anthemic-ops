@@ -73,6 +73,8 @@ jobs:
           set -euo pipefail
           curl -sfI --retry 3 --retry-delay 2 "https://anthemic-developments.com/" | head -1 | grep -q "200"
           curl -sfI --retry 3 --retry-delay 2 "https://anthemic-developments.com/setlist/" | head -1 | grep -q "200"
+          curl -sfI --retry 3 --retry-delay 2 "https://anthemic-developments.com/bass/" | head -1 | grep -q "200"
+          curl -sf "https://anthemic-developments.com/bass/" | grep -qF "Bass Teacher"
           code=$(curl -s -o /dev/null -w "%{http_code}" "https://anthemic-developments.com/api/v1/songs")
           if [[ "${code}" != "401" && "${code}" != "403" ]]; then
             echo "Unexpected API HTTP status: ${code} (expected 401 or 403)"

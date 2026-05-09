@@ -82,16 +82,18 @@ sudo nginx -t && sudo systemctl reload nginx
 
 Then revert the bad commit in this repo so the next push is consistent.
 
-## Adding a new app to the vhost
+## Bass coaching (`/bass/`)
 
-When you add (e.g.) the bass site:
+Bass is **static HTML** deployed with the hub into `/var/www/anthemic-hub/bass/` (not a separate upstream). nginx must fall back to **`/bass/index.html`**, not `/index.html`, or `/bass/` serves the hub homepage.
 
-1. In `nginx/sites-available/anthemic-hub.conf`, add an `upstream anthemic_bass { server 127.0.0.1:8072; }` and a `location /bass/ { proxy_pass http://anthemic_bass/; ... }` block (mirror the Set List pattern, no API needed unless the app has one).
-2. Commit + push.
-3. Hub repo: switch the bass card from "Coming soon" to a real link.
+1. **anthemic-hub**: CI and `anthemic-hub-deploy-apply.sh` must include `bass/**` on the droplet.
+2. **anthemic-ops**: `location /bass/ { try_files $uri $uri/ /bass/index.html; }` with `root /var/www/anthemic-hub;`, then push and run the nginx deploy workflow (or copy + `nginx -t` + reload).
+3. **Droplet**: reinstall `/usr/local/bin/anthemic-hub-deploy-apply.sh` from this repo if it is still an older version that omits `bass/`.
+
+For a **containerised** bass app later, you would add an `upstream` and `proxy_pass` instead, like Set List.
 
 ## Related repos
 
-- [`anthemic-hub`](https://github.com/andypapmedialight/anthemic-hub) — the menu page at `/`.
-- [`SetListGenerator`](https://github.com/andypapmedialight/SetListGenerator) — `/setlist/` and `/api/`.
-- (future) `anthemic-personal`, `anthemic-bass` — their respective paths.
+- [`anthemic-hub`](https://github.com/andypapmedialight/anthemic-hub) - hub at `/` and static **`/bass/`**.
+- [`SetListGenerator`](https://github.com/andypapmedialight/SetListGenerator) - `/setlist/` and `/api/`.
+- (future) `anthemic-personal` - `/personal/` when ready.
