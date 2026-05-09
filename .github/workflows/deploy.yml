@@ -74,20 +74,21 @@ jobs:
           for url in \
             "https://anthemic-developments.com/" \
             "https://anthemic-developments.com/setlist/" \
-            "https://anthemic-developments.com/bass/" \
           ; do
             c=$(curl -sS -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 2 "${url}")
             [[ "${c}" == "200" ]] || { echo "${url} returned HTTP ${c}"; exit 1; }
           done
-          # Slurp body first: curl|head or curl|grep -q can SIGPIPE curl (exit 23) under set -o pipefail.
-          html_bass=$(curl -sS --retry 3 --retry-delay 2 "https://anthemic-developments.com/bass/")
-          if [[ "${html_bass}" =~ \<title\>([^<]+)\</title\> ]]; then
-            title_bass="${BASH_REMATCH[1]}"
-          else
-            title_bass=""
+          # Write /bass/ body to disk: large HTML into $(...) can still make curl exit 23 (write to pipe).
+          code_bass=$(curl -sS --retry 3 --retry-delay 2 -o /tmp/anthemic-smoke-bass.html -w "%{http_code}" "https://anthemic-developments.com/bass/")
+          [[ "${code_bass}" == "200" ]] || { echo "/bass/ returned HTTP ${code_bass}"; exit 1; }
+          if grep -qF '<title>Anthemic Developments</title>' /tmp/anthemic-smoke-bass.html; then
+            echo "/bass/ is serving the hub index (fix nginx try_files fallback to /bass/index.html)"
+            exit 1
           fi
-          tlc=${title_bass,,}
-          [[ "${tlc}" == *bass* ]] || { echo "/bass/ title missing bass; got: ${title_bass:-<empty>}"; exit 1; }
+          if ! grep -qE 'Bass Teacher|guitarPhoto' /tmp/anthemic-smoke-bass.html; then
+            echo "/bass/ response missing expected PapaWeb markers (Bass Teacher or guitarPhoto)"
+            exit 1
+          fi
           code=$(curl -sS -o /dev/null -w "%{http_code}" "https://anthemic-developments.com/api/v1/songs")
           if [[ "${code}" != "401" && "${code}" != "403" ]]; then
             echo "Unexpected API HTTP status: ${code} (expected 401 or 403)"
