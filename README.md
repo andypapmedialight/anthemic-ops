@@ -17,7 +17,7 @@ scripts/droplet/
   deploy.yml               ← push-to-main pipeline
 ```
 
-> SWARM (`report.safermurrayroad.com`) is **not** managed here — it lives in the SWARM repo.
+> SWARM (`report.safermurrayroad.com`) is **not** managed here - it lives in the SWARM repo.
 
 ## Workflow
 
