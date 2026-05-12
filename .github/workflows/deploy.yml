@@ -81,7 +81,7 @@ jobs:
           # Write /bass/ body to disk: large HTML into $(...) can still make curl exit 23 (write to pipe).
           code_bass=$(curl -sS --retry 3 --retry-delay 2 -o /tmp/anthemic-smoke-bass.html -w "%{http_code}" "https://anthemic-developments.com/bass/")
           [[ "${code_bass}" == "200" ]] || { echo "/bass/ returned HTTP ${code_bass}"; exit 1; }
-          if grep -qF '<title>Anthemic Developments</title>' /tmp/anthemic-smoke-bass.html; then
+          if grep -qF 'id="reading-list-root"' /tmp/anthemic-smoke-bass.html; then
             echo "/bass/ is serving the hub index (fix nginx try_files fallback to /bass/index.html)"
             exit 1
           fi
