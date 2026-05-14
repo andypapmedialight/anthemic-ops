@@ -85,8 +85,8 @@ jobs:
             echo "/bass/ is serving the hub index (fix nginx try_files fallback to /bass/index.html)"
             exit 1
           fi
-          if ! grep -qE 'Bass Teacher|guitarPhoto' /tmp/anthemic-smoke-bass.html; then
-            echo "/bass/ response missing expected PapaWeb markers (Bass Teacher or guitarPhoto)"
+          if ! grep -qE 'Andy Pap — Bass|warmth-motif-canvas|thrives' /tmp/anthemic-smoke-bass.html; then
+            echo "/bass/ response missing expected bass page markers (title, motif canvas, or hero headline)"
             exit 1
           fi
           code=$(curl -sS -o /dev/null -w "%{http_code}" "https://anthemic-developments.com/api/v1/songs")
