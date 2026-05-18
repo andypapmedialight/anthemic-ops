@@ -69,6 +69,10 @@ jobs:
             'sudo /usr/local/bin/anthemic-nginx-apply.sh'
 
       - name: Smoke test (public HTTPS)
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           set -euo pipefail
           for url in \
@@ -94,7 +98,21 @@ jobs:
             echo "Unexpected API HTTP status: ${code} (expected 401 or 403)"
             exit 1
           fi
-          code_val=$(curl -sS -o /tmp/anthemic-smoke-val.json -w "%{http_code}" --retry 2 --retry-delay 3 \
-            --max-time 120 "https://anthemic-developments.com/economics/proxy/valuation?metric=otc-notional")
-          [[ "${code_val}" == "200" ]] || { echo "/economics/proxy/valuation returned HTTP ${code_val} (deploy anthemic-hub mmd-valuation.service first)"; exit 1; }
+          ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            'systemctl is-active --quiet mmd-valuation.service' \
+            || { echo "mmd-valuation.service inactive — run anthemic-hub deploy first"; exit 1; }
+          code_val=""
+          for attempt in 1 2 3; do
+            code_val=$(curl -sS -o /tmp/anthemic-smoke-val.json -w "%{http_code}" --max-time 120 \
+              "https://anthemic-developments.com/economics/proxy/valuation?metric=otc-notional" || echo "000")
+            [[ "${code_val}" == "200" ]] && break
+            echo "valuation smoke attempt ${attempt}: HTTP ${code_val}" >&2
+            sleep 10
+          done
+          [[ "${code_val}" == "200" ]] || {
+            echo "/economics/proxy/valuation returned HTTP ${code_val}"
+            ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              'journalctl -u mmd-valuation.service -n 25 --no-pager' || true
+            exit 1
+          }
           python3 -c "import json; d=json.load(open('/tmp/anthemic-smoke-val.json')); assert d.get('display'), d"
