@@ -92,6 +92,14 @@ Bass is **static HTML** deployed with the hub into `/var/www/anthemic-hub/bass/`
 
 For a **containerised** bass app later, you would add an `upstream` and `proxy_pass` instead, like Set List.
 
+## Morning Macro valuation API (`/economics/proxy/valuation`)
+
+Live BIS/FRED valuation cards are served by **`mmd-valuation.service`** on `127.0.0.1:8071`, installed by **anthemic-hub** deploy (`/opt/anthemic-mmd/`, unit from `scripts/droplet/mmd-valuation.service`). nginx proxies:
+
+`GET /economics/proxy/valuation?metric=otc-notional` → loopback valuation server.
+
+Deploy order for a new droplet: hub apply (installs Python + systemd unit) **then** ops nginx deploy (adds `location = /economics/proxy/valuation`). CI smoke-tests the public URL after ops deploy.
+
 ## Related repos
 
 - [`anthemic-hub`](https://github.com/andypapmedialight/anthemic-hub) - hub at `/` and static **`/bass/`**.

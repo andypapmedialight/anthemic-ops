@@ -94,3 +94,7 @@ jobs:
             echo "Unexpected API HTTP status: ${code} (expected 401 or 403)"
             exit 1
           fi
+          code_val=$(curl -sS -o /tmp/anthemic-smoke-val.json -w "%{http_code}" --retry 2 --retry-delay 3 \
+            --max-time 120 "https://anthemic-developments.com/economics/proxy/valuation?metric=otc-notional")
+          [[ "${code_val}" == "200" ]] || { echo "/economics/proxy/valuation returned HTTP ${code_val} (deploy anthemic-hub mmd-valuation.service first)"; exit 1; }
+          python3 -c "import json; d=json.load(open('/tmp/anthemic-smoke-val.json')); assert d.get('display'), d"
