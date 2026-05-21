@@ -55,6 +55,8 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           RSYNC_SSH="ssh -p ${DEPLOY_PORT}"
+          ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            'mkdir -p /home/deploy/incoming-nginx/sites-available /home/deploy/incoming-nginx/conf.d'
           rsync -avz -e "${RSYNC_SSH}" \
             nginx/sites-available/anthemic-hub.conf \
             "${DEPLOY_USER}@${DEPLOY_HOST}:incoming-nginx/sites-available/anthemic-hub.conf"
