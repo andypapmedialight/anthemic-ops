@@ -97,6 +97,14 @@ jobs:
             echo "/bass/ response missing expected bass page markers (title, motif canvas, or hero headline)"
             exit 1
           fi
+          code_hire=$(curl -sS --retry 3 --retry-delay 2 -o /tmp/anthemic-smoke-hire.html -w "%{http_code}" "https://anthemic-developments.com/hire/")
+          [[ "${code_hire}" == "200" ]] || { echo "/hire/ returned HTTP ${code_hire}"; exit 1; }
+          if grep -qF 'id="hero-name"' /tmp/anthemic-smoke-hire.html; then
+            echo "/hire/ is serving the hub index (check nginx location ^~ /hire/)"
+            exit 1
+          fi
+          grep -qF '<title>Why hire Andy Papadopoulos</title>' /tmp/anthemic-smoke-hire.html \
+            || { echo "/hire/ missing expected <title> marker"; exit 1; }
           code=$(curl -sS -o /dev/null -w "%{http_code}" "https://anthemic-developments.com/api/v1/songs")
           if [[ "${code}" != "401" && "${code}" != "403" ]]; then
             echo "Unexpected API HTTP status: ${code} (expected 401 or 403)"
