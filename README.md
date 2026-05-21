@@ -10,6 +10,8 @@ Owns the active nginx **site config** for the Anthemic vhost. Each app (Set List
 nginx/
   sites-available/
     anthemic-hub.conf      ← single source of truth, deployed to /etc/nginx/sites-available/anthemic-hub
+  conf.d/
+    anthemic-hub-limits.conf  ← limit_req_zone (http context), deployed to /etc/nginx/conf.d/
   archived/                ← prior versions kept for reference, not deployed
 scripts/droplet/
   anthemic-nginx-apply.sh  ← installed at /usr/local/bin/, runs nginx -t before reload
@@ -23,7 +25,7 @@ scripts/droplet/
 
 1. Edit `nginx/sites-available/anthemic-hub.conf`.
 2. Commit + push to `main`.
-3. CI rsyncs the file, runs `sudo /usr/local/bin/anthemic-nginx-apply.sh` which:
+3. CI rsyncs the site config and `conf.d/anthemic-hub-limits.conf`, runs `sudo /usr/local/bin/anthemic-nginx-apply.sh` which:
    - backs up the current live config to `/var/backups/nginx-anthemic/`,
    - replaces it with the new one,
    - runs `nginx -t`,
@@ -55,7 +57,7 @@ EOF
 sudo chmod 440 /etc/sudoers.d/deploy-anthemic-nginx
 sudo visudo -cf /etc/sudoers.d/deploy-anthemic-nginx
 
-sudo -u deploy mkdir -p /home/deploy/incoming-nginx/sites-available
+sudo -u deploy mkdir -p /home/deploy/incoming-nginx/sites-available /home/deploy/incoming-nginx/conf.d
 ```
 
 ## GitHub repository secrets
