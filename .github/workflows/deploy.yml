@@ -8,7 +8,6 @@ on:
     branches: [main]
     paths:
       - "nginx/sites-available/anthemic-hub.conf"
-      - "nginx/conf.d/**"
       - "scripts/droplet/anthemic-nginx-apply.sh"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
@@ -56,13 +55,10 @@ jobs:
         run: |
           RSYNC_SSH="ssh -p ${DEPLOY_PORT}"
           ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            'mkdir -p /home/deploy/incoming-nginx/sites-available /home/deploy/incoming-nginx/conf.d'
+            'mkdir -p /home/deploy/incoming-nginx/sites-available'
           rsync -avz -e "${RSYNC_SSH}" \
             nginx/sites-available/anthemic-hub.conf \
             "${DEPLOY_USER}@${DEPLOY_HOST}:incoming-nginx/sites-available/anthemic-hub.conf"
-          rsync -avz -e "${RSYNC_SSH}" \
-            nginx/conf.d/anthemic-hub-limits.conf \
-            "${DEPLOY_USER}@${DEPLOY_HOST}:incoming-nginx/conf.d/anthemic-hub-limits.conf"
           rsync -avz -e "${RSYNC_SSH}" \
             scripts/droplet/anthemic-nginx-apply.sh \
             "${DEPLOY_USER}@${DEPLOY_HOST}:incoming-nginx/anthemic-nginx-apply.sh"
@@ -74,7 +70,7 @@ jobs:
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            'sudo install -o root -g root -m 755 /home/deploy/incoming-nginx/anthemic-nginx-apply.sh /usr/local/bin/anthemic-nginx-apply.sh && sudo /usr/local/bin/anthemic-nginx-apply.sh'
+            'sudo /usr/local/bin/anthemic-nginx-apply.sh'
 
       - name: Smoke test (public HTTPS)
         env:
