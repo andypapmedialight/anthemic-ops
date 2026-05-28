@@ -128,3 +128,28 @@ jobs:
             exit 1
           }
           python3 -c "import json; d=json.load(open('/tmp/anthemic-smoke-val.json')); assert d.get('display'), d"
+          code_fred_h=""
+          for attempt in 1 2 3; do
+            code_fred_h=$(curl -sS -o /tmp/anthemic-smoke-fred-h.json -w "%{http_code}" --max-time 15 \
+              "https://anthemic-developments.com/economics/proxy/fred/health" || echo "000")
+            [[ "${code_fred_h}" == "200" ]] && break
+            sleep 3
+          done
+          [[ "${code_fred_h}" == "200" ]] || {
+            echo "/economics/proxy/fred/health returned HTTP ${code_fred_h} (check mmd-fred-api-key snippet)"
+            exit 1
+          }
+          code_fresh=""
+          for attempt in 1 2 3; do
+            code_fresh=$(curl -sS -o /tmp/anthemic-smoke-fresh.json -w "%{http_code}" --max-time 30 \
+              "https://anthemic-developments.com/economics/api/freshness" || echo "000")
+            [[ "${code_fresh}" == "200" ]] && break
+            sleep 5
+          done
+          [[ "${code_fresh}" == "200" ]] || {
+            echo "/economics/api/freshness returned HTTP ${code_fresh}"
+            ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              'journalctl -u mmd-valuation.service -n 25 --no-pager' || true
+            exit 1
+          }
+          python3 -c "import json; d=json.load(open('/tmp/anthemic-smoke-fresh.json')); assert d.get('fredApi') and d.get('series'), d"

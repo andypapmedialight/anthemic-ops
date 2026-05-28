@@ -95,13 +95,21 @@ Bass is **static HTML** deployed with the hub into `/var/www/anthemic-hub/bass/`
 
 For a **containerised** bass app later, you would add an `upstream` and `proxy_pass` instead, like Set List.
 
-## Morning Macro valuation API (`/economics/proxy/valuation`)
+## Morning Macro economics proxies
 
-Live BIS/FRED valuation cards are served by **`mmd-valuation.service`** on `127.0.0.1:8071`, installed by **anthemic-hub** deploy (`/opt/anthemic-mmd/`, unit from `scripts/droplet/mmd-valuation.service`). nginx proxies:
+Static UI: `/var/www/anthemic-hub/economics/` (hub deploy). Live data uses **`mmd-valuation.service`** on `127.0.0.1:8071` plus nginx upstream proxies to Yahoo, Google, and FRED.
 
-`GET /economics/proxy/valuation?metric=otc-notional` → loopback valuation server.
+| Public path | Backend |
+|-------------|---------|
+| `/economics/proxy/yahoo` | `query1.finance.yahoo.com` |
+| `/economics/proxy/google` | `www.google.com/finance` |
+| `/economics/proxy/fred` | FRED API (`/etc/nginx/snippets/mmd-fred-api-key.conf`) |
+| `/economics/proxy/fred/health` | JSON `ok` when key snippet is set |
+| `/economics/proxy/valuation` | `mmd_valuation` — `?metric=` or `?metrics=` batch |
+| `/economics/proxy/valuation/health` | `mmd_valuation` `/health` |
+| `/economics/api/freshness` | `mmd_valuation` `/freshness` (FRED vintage footer) |
 
-Deploy order for a new droplet: hub apply (installs Python + systemd unit) **then** ops nginx deploy (adds `location = /economics/proxy/valuation`). CI smoke-tests the public URL after ops deploy.
+Deploy order for a new droplet: **anthemic-hub** deploy (static files, `FRED_API_KEY` → snippet + `/etc/anthemic-mmd/valuation.env`, systemd unit) **then** **anthemic-ops** nginx deploy. CI smoke-tests valuation and freshness URLs after ops deploy.
 
 ## Related repos
 
