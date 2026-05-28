@@ -111,6 +111,32 @@ Static UI: `/var/www/anthemic-hub/economics/` (hub deploy). Live data uses **`mm
 
 Deploy order for a new droplet: **anthemic-hub** deploy (static files, `FRED_API_KEY` → snippet + `/etc/anthemic-mmd/valuation.env`, systemd unit) **then** **anthemic-ops** nginx deploy. CI smoke-tests valuation and freshness URLs after ops deploy.
 
+### Rate limits (`/economics/proxy/*`)
+
+Per-IP `limit_req` zones in `anthemic-hub.conf` (429 when exceeded):
+
+| Zone | Paths | Rate |
+|------|--------|------|
+| `hub_mmd_health` | `fred/health`, `valuation/health`, `/economics/api/freshness` | 120/min |
+| `hub_mmd_quote` | Yahoo, Google proxies | 120/min |
+| `hub_mmd_fred` | FRED series proxy | 36/min |
+| `hub_mmd_valuation` | Live valuation metrics | 12/min |
+
+A normal dashboard refresh should stay under burst limits; scrapers get throttled.
+
+### Uptime monitoring
+
+- **GitHub Actions:** `.github/workflows/mmd-uptime.yml` — every 15 minutes, fast probes (health, freshness, `/economics/`). Use **workflow_dispatch** with `deep: true` for a slow BIS margin-debt check.
+- **On-droplet (optional):** `scripts/mmd-uptime-check.sh` — e.g. cron `*/15 * * * * BASE_URL=https://anthemic-developments.com /path/mmd-uptime-check.sh`
+
+Enable GitHub notifications: repo **Settings → Notifications** (or add a failed-workflow Slack step later).
+
+### FRED freshness cache (hub deploy)
+
+`mmd-valuation` caches `/freshness` FRED lookups in memory (default **300s**). Override in `/etc/anthemic-mmd/valuation.env`:
+
+`MMD_FRED_FRESHNESS_CACHE_TTL=300`
+
 ## Related repos
 
 - [`anthemic-hub`](https://github.com/andypapmedialight/anthemic-hub) - hub at `/` and static **`/bass/`**.

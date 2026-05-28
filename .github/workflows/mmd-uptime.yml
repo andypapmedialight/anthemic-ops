@@ -1,0 +1,59 @@
+name: Morning Macro uptime
+
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # Every 15 minutes (GitHub Actions cron uses UTC).
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      deep:
+        description: "Run slow valuation metric probe (BIS)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: mmd-uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fast probes
+        env:
+          BASE: https://anthemic-developments.com
+        run: |
+          set -euo pipefail
+          probe() {
+            local name="$1" url="$2" max="${3:-20}"
+            code=$(curl -fsS -o "/tmp/mmd-${name}.out" -w "%{http_code}" --max-time "$max" "$url" || echo "000")
+            echo "${name}: HTTP ${code}"
+            [[ "${code}" == "200" ]] || { cat "/tmp/mmd-${name}.out" 2>/dev/null || true; exit 1; }
+          }
+          probe val-health "${BASE}/economics/proxy/valuation/health" 15
+          probe fred-health "${BASE}/economics/proxy/fred/health" 15
+          probe freshness "${BASE}/economics/api/freshness" 30
+          python3 - <<'PY'
+          import json, pathlib
+          d = json.loads(pathlib.Path("/tmp/mmd-freshness.out").read_text())
+          assert d.get("fredApi"), d
+          assert d.get("series"), d
+          print("freshness: fredApi ok, series", len(d["series"]))
+          PY
+          probe economics-page "${BASE}/economics/" 20
+          grep -qF 'macro.js' /tmp/mmd-economics-page.out
+
+      - name: Deep probe (valuation live metric)
+        if: github.event_name == 'workflow_dispatch' && inputs.deep
+        env:
+          BASE: https://anthemic-developments.com
+        run: |
+          set -euo pipefail
+          code=$(curl -fsS -o /tmp/mmd-val-metric.json -w "%{http_code}" --max-time 120 \
+            "${BASE}/economics/proxy/valuation?metric=margin-debt" || echo "000")
+          echo "margin-debt: HTTP ${code}"
+          [[ "${code}" == "200" ]] || exit 1
+          python3 -c "import json; d=json.load(open('/tmp/mmd-val-metric.json')); assert d.get('display'), d"
