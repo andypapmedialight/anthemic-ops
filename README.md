@@ -119,8 +119,8 @@ Per-IP `limit_req` zones in `anthemic-hub.conf` (429 when exceeded):
 |------|--------|------|
 | `hub_mmd_health` | `fred/health`, `valuation/health`, `/economics/api/freshness` | 120/min |
 | `hub_mmd_quote` | Yahoo, Google proxies | 120/min |
-| `hub_mmd_fred` | FRED series proxy | 36/min |
-| `hub_mmd_valuation` | Live valuation metrics | 12/min |
+| `hub_mmd_fred` | FRED series proxy | 48/min |
+| `hub_mmd_valuation` | Live valuation metrics | 18/min |
 
 A normal dashboard refresh should stay under burst limits; scrapers get throttled.
 
