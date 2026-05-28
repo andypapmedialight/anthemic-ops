@@ -57,3 +57,51 @@ jobs:
           echo "margin-debt: HTTP ${code}"
           [[ "${code}" == "200" ]] || exit 1
           python3 -c "import json; d=json.load(open('/tmp/mmd-val-metric.json')); assert d.get('display'), d"
+
+      - name: Slack alert on failure
+        if: failure()
+        env:
+          MMD_UPTIME_SLACK_WEBHOOK: ${{ secrets.MMD_UPTIME_SLACK_WEBHOOK }}
+          PAPAWEB_SLACK_WEBHOOK: ${{ secrets.PAPAWEB_SLACK_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          webhook = (
+              os.environ.get("MMD_UPTIME_SLACK_WEBHOOK", "").strip()
+              or os.environ.get("PAPAWEB_SLACK_WEBHOOK", "").strip()
+          )
+          if not webhook:
+              print("No Slack webhook (set MMD_UPTIME_SLACK_WEBHOOK or PAPAWEB_SLACK_WEBHOOK)")
+              raise SystemExit(0)
+
+          run_url = os.environ.get("RUN_URL", "")
+          text = "Morning Macro uptime check failed on anthemic-developments.com"
+          blocks = [
+              {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": f"*{text}*\nSee the GitHub Actions log for probe details.",
+                  },
+              },
+          ]
+          if run_url:
+              blocks.append({
+                  "type": "section",
+                  "text": {"type": "mrkdwn", "text": f"<{run_url}|View workflow run>"},
+              })
+
+          body = json.dumps({"text": text, "blocks": blocks}).encode("utf-8")
+          req = urllib.request.Request(
+              webhook,
+              data=body,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+          with urllib.request.urlopen(req, timeout=20) as resp:
+              print("Slack alert sent:", resp.status)
+          PY

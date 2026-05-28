@@ -129,7 +129,9 @@ A normal dashboard refresh should stay under burst limits; scrapers get throttle
 - **GitHub Actions:** `.github/workflows/mmd-uptime.yml` — every 15 minutes, fast probes (health, freshness, `/economics/`). Use **workflow_dispatch** with `deep: true` for a slow BIS margin-debt check.
 - **On-droplet (optional):** `scripts/mmd-uptime-check.sh` — e.g. cron `*/15 * * * * BASE_URL=https://anthemic-developments.com /path/mmd-uptime-check.sh`
 
-Enable GitHub notifications: repo **Settings → Notifications** (or add a failed-workflow Slack step later).
+**Slack on failure:** add repo secret `MMD_UPTIME_SLACK_WEBHOOK` (incoming webhook URL). If unset, the workflow falls back to `PAPAWEB_SLACK_WEBHOOK`. Failed scheduled runs post a short message with a link to the Actions log.
+
+You can also enable GitHub **Settings → Notifications** for workflow failures.
 
 ### FRED freshness cache (hub deploy)
 
