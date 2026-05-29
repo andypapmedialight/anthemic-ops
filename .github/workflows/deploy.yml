@@ -139,12 +139,20 @@ jobs:
             echo "/economics/proxy/fred/health returned HTTP ${code_fred_h} (check mmd-fred-api-key snippet)"
             exit 1
           }
+          ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            'curl -fsS --max-time 25 http://127.0.0.1:8071/freshness | python3 -c "import json,sys; d=json.load(sys.stdin); assert d.get(\"fredApi\") and len(d.get(\"series\") or {})>=1, d"' \
+            || {
+              echo "loopback /freshness failed (run anthemic-hub deploy first to update mmd-valuation)"
+              ssh -p "${DEPLOY_PORT}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+                'journalctl -u mmd-valuation.service -n 25 --no-pager' || true
+              exit 1
+            }
           code_fresh=""
           for attempt in 1 2 3; do
-            code_fresh=$(curl -sS -o /tmp/anthemic-smoke-fresh.json -w "%{http_code}" --max-time 45 \
+            code_fresh=$(curl -sS -o /tmp/anthemic-smoke-fresh.json -w "%{http_code}" --max-time 20 \
               "https://anthemic-developments.com/economics/api/freshness" || echo "000")
             [[ "${code_fresh}" == "200" ]] && break
-            sleep 5
+            sleep 3
           done
           [[ "${code_fresh}" == "200" ]] || {
             echo "/economics/api/freshness returned HTTP ${code_fresh}"
