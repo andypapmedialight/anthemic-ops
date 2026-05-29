@@ -48,7 +48,7 @@ jobs:
           import json, pathlib
           d = json.loads(pathlib.Path("/tmp/mmd-freshness.out").read_text())
           assert d.get("fredApi"), d
-          assert d.get("series"), d
+          assert len(d.get("series") or {}) >= 1, d
           print("freshness: fredApi ok, series", len(d["series"]),
                 "(degraded)" if d.get("degraded") else "")
           PY

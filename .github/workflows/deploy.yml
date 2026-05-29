@@ -152,4 +152,4 @@ jobs:
               'journalctl -u mmd-valuation.service -n 25 --no-pager' || true
             exit 1
           }
-          python3 -c "import json; d=json.load(open('/tmp/anthemic-smoke-fresh.json')); assert d.get('fredApi') and d.get('series'), d"
+          python3 -c "import json; d=json.load(open('/tmp/anthemic-smoke-fresh.json')); assert d.get('fredApi') and len(d.get('series') or {})>=1, d"
