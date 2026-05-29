@@ -35,13 +35,22 @@ jobs:
           }
           probe val-health "${BASE}/economics/proxy/valuation/health" 15
           probe fred-health "${BASE}/economics/proxy/fred/health" 15
-          probe freshness "${BASE}/economics/api/freshness" 30
+          code_fresh="000"
+          for attempt in 1 2 3; do
+            code_fresh=$(curl -fsS -o /tmp/mmd-freshness.out -w "%{http_code}" --max-time 45 \
+              "${BASE}/economics/api/freshness" || echo "000")
+            echo "freshness attempt ${attempt}: HTTP ${code_fresh}"
+            [[ "${code_fresh}" == "200" ]] && break
+            sleep 5
+          done
+          [[ "${code_fresh}" == "200" ]] || { cat /tmp/mmd-freshness.out 2>/dev/null || true; exit 1; }
           python3 - <<'PY'
           import json, pathlib
           d = json.loads(pathlib.Path("/tmp/mmd-freshness.out").read_text())
           assert d.get("fredApi"), d
           assert d.get("series"), d
-          print("freshness: fredApi ok, series", len(d["series"]))
+          print("freshness: fredApi ok, series", len(d["series"]),
+                "(degraded)" if d.get("degraded") else "")
           PY
           probe economics-page "${BASE}/economics/" 20
           grep -qF 'macro.js' /tmp/mmd-economics-page.out

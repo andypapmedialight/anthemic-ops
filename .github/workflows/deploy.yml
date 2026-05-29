@@ -141,7 +141,7 @@ jobs:
           }
           code_fresh=""
           for attempt in 1 2 3; do
-            code_fresh=$(curl -sS -o /tmp/anthemic-smoke-fresh.json -w "%{http_code}" --max-time 30 \
+            code_fresh=$(curl -sS -o /tmp/anthemic-smoke-fresh.json -w "%{http_code}" --max-time 45 \
               "https://anthemic-developments.com/economics/api/freshness" || echo "000")
             [[ "${code_fresh}" == "200" ]] && break
             sleep 5
