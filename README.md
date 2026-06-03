@@ -109,7 +109,7 @@ Static UI: `/var/www/anthemic-hub/economics/` (hub deploy). Live data uses **`mm
 | `/economics/proxy/valuation/health` | `mmd_valuation` `/health` |
 | `/economics/api/freshness` | `mmd_valuation` `/freshness` (FRED vintage footer) |
 
-Deploy order for a new droplet: **anthemic-hub** deploy (static files, `FRED_API_KEY` → snippet + `/etc/anthemic-mmd/valuation.env`, systemd unit) **then** **anthemic-ops** nginx deploy. CI smoke-tests valuation and freshness URLs after ops deploy.
+Deploy order for a new droplet: **anthemic-hub** deploy (static files, `FRED_API_KEY` → snippet + `/etc/anthemic-mmd/valuation.env`, optional `ABS_INDICATOR_API_KEY` in the same env file for AU headline macro, systemd unit) **then** **anthemic-ops** nginx deploy. CI smoke-tests valuation and freshness URLs after ops deploy.
 
 ### Rate limits (`/economics/proxy/*`)
 
