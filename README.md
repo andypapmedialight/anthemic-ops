@@ -143,4 +143,5 @@ You can also enable GitHub **Settings → Notifications** for workflow failures.
 
 - [`anthemic-hub`](https://github.com/andypapmedialight/anthemic-hub) - hub at `/` and static **`/bass/`**.
 - [`SetListGenerator`](https://github.com/andypapmedialight/SetListGenerator) - `/setlist/` and `/api/`.
+- [`music-session-tracker`](https://github.com/andypapmedialight/music-session-tracker) - `tracker.anthemic-developments.com` (own subdomain + cert), proxied to `session-tracker.service` on `127.0.0.1:8073`.
 - (future) `anthemic-personal` - `/personal/` when ready.
