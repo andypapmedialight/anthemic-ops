@@ -107,6 +107,8 @@ Static UI: `/var/www/anthemic-hub/economics/` (hub deploy). Live data uses **`mm
 | `/economics/proxy/fred/health` | JSON `ok` when key snippet is set |
 | `/economics/proxy/valuation` | `mmd_valuation` — `?metric=` or `?metrics=` batch |
 | `/economics/proxy/valuation/health` | `mmd_valuation` `/health` |
+| `/economics/proxy/treasury` | `mmd_valuation` — `?metric=debt-to-penny` (Treasury Fiscal Data) |
+| `/economics/proxy/treasury/health` | `mmd_valuation` `/treasury/health` |
 | `/economics/api/freshness` | `mmd_valuation` `/freshness` (FRED vintage footer) |
 
 Deploy order for a new droplet: **anthemic-hub** deploy (static files, `FRED_API_KEY` → snippet + `/etc/anthemic-mmd/valuation.env`, optional `ABS_INDICATOR_API_KEY` in the same env file for AU headline macro, systemd unit) **then** **anthemic-ops** nginx deploy. CI smoke-tests valuation and freshness URLs after ops deploy.
@@ -117,7 +119,7 @@ Per-IP `limit_req` zones in `anthemic-hub.conf` (429 when exceeded):
 
 | Zone | Paths | Rate |
 |------|--------|------|
-| `hub_mmd_health` | `fred/health`, `valuation/health`, `/economics/api/freshness` | 120/min |
+| `hub_mmd_health` | `fred/health`, `valuation/health`, `treasury/health`, `/economics/api/freshness` | 120/min |
 | `hub_mmd_quote` | Yahoo, Google proxies | 120/min |
 | `hub_mmd_fred` | FRED series proxy | 48/min |
 | `hub_mmd_valuation` | Live valuation metrics | 18/min |
