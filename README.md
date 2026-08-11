@@ -21,17 +21,39 @@ scripts/droplet/
 
 ## Workflow
 
-1. Edit `nginx/sites-available/anthemic-hub.conf`.
+1. Edit `nginx/sites-available/anthemic-hub.conf` (or related ops scripts).
 2. Commit + push to `main`.
-3. CI rsyncs the site config (including `limit_req_zone` in `anthemic-hub.conf`), runs `sudo /usr/local/bin/anthemic-nginx-apply.sh` which:
+3. CI rsyncs into `/home/deploy/incoming-nginx/`:
+   - `sites-available/anthemic-hub.conf`
+   - `anthemic-nginx-apply.sh` (staged for review only; see below)
+4. CI runs `sudo /usr/local/bin/anthemic-nginx-apply.sh`, which:
    - backs up the current live config to `/var/backups/nginx-anthemic/`,
    - replaces it with the new one,
    - runs `nginx -t`,
    - on failure, restores the backup and exits 1 (no reload),
    - on success, `systemctl reload nginx`.
-4. CI smoke-tests the public URLs (`/`, `/setlist/`, `/bass/`, `/api/v1/songs`). **`/bass/` needs files on disk** from an **anthemic-hub** deploy; if ops runs alone first, `/bass/` may 404 until hub has deployed.
+5. CI smoke-tests the public URLs (`/`, `/setlist/`, `/bass/`, `/api/v1/songs`). **`/bass/` needs files on disk** from an **anthemic-hub** deploy; if ops runs alone first, `/bass/` may 404 until hub has deployed.
 
 Manual: **Actions → Deploy → Run workflow**.
+
+### Apply script updates (manual)
+
+`/usr/local/bin/anthemic-nginx-apply.sh` does **not** self-update from `incoming-nginx/`. That blocks deploy→root RCE if the `deploy` key is compromised.
+
+| Change type | Deploy behaviour |
+|-------------|------------------|
+| `nginx/sites-available/anthemic-hub.conf` | Automatic on push to `main` |
+| `scripts/droplet/anthemic-nginx-apply.sh` | Rsynced to `incoming-nginx/` only; live `/usr/local/bin` copy unchanged until you install it as root |
+
+After reviewing the staged script:
+
+```bash
+sudo install -o root -g root -m 755 \
+  /home/deploy/incoming-nginx/anthemic-nginx-apply.sh \
+  /usr/local/bin/anthemic-nginx-apply.sh
+```
+
+If the staged script differs from `/usr/local/bin`, apply logs a warning and continues with the installed version. Hub apply in **anthemic-hub** follows the same rule.
 
 ## One-time Droplet setup
 
@@ -57,7 +79,8 @@ sudo visudo -cf /etc/sudoers.d/deploy-anthemic-nginx
 
 sudo -u deploy mkdir -p /home/deploy/incoming-nginx/sites-available
 
-# After pulling a new apply script, refresh it once as root (CI cannot sudo install):
+# Apply script does NOT self-update from incoming-nginx (avoids deploy→root RCE).
+# After reviewing a new apply script on the droplet, install it manually as root:
 #   sudo install -o root -g root -m 755 /home/deploy/incoming-nginx/anthemic-nginx-apply.sh /usr/local/bin/anthemic-nginx-apply.sh
 ```
 
@@ -91,7 +114,7 @@ Bass is **static HTML** deployed with the hub into `/var/www/anthemic-hub/bass/`
 
 1. **anthemic-hub**: CI and `anthemic-hub-deploy-apply.sh` must include `bass/**` on the droplet.
 2. **anthemic-ops**: `location /bass/ { try_files $uri $uri/ /bass/index.html; }` with `root /var/www/anthemic-hub;`, then push and run the nginx deploy workflow (or copy + `nginx -t` + reload).
-3. **Droplet**: reinstall `/usr/local/bin/anthemic-hub-deploy-apply.sh` from this repo if it is still an older version that omits `bass/`.
+3. **Droplet**: if `/bass/` is missing after hub deploy, the installed `/usr/local/bin/anthemic-hub-deploy-apply.sh` may be stale — install the reviewed copy from **anthemic-hub** `incoming-hub/` (apply scripts do not self-update).
 
 For a **containerised** bass app later, you would add an `upstream` and `proxy_pass` instead, like Set List.
 

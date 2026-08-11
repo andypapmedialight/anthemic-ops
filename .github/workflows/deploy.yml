@@ -59,6 +59,8 @@ jobs:
           rsync -avz -e "${RSYNC_SSH}" \
             nginx/sites-available/anthemic-hub.conf \
             "${DEPLOY_USER}@${DEPLOY_HOST}:incoming-nginx/sites-available/anthemic-hub.conf"
+          # Stage apply script for review only — /usr/local/bin is NOT auto-updated
+          # (deploy-writable self-update was removed to prevent deploy→root RCE).
           rsync -avz -e "${RSYNC_SSH}" \
             scripts/droplet/anthemic-nginx-apply.sh \
             "${DEPLOY_USER}@${DEPLOY_HOST}:incoming-nginx/anthemic-nginx-apply.sh"
