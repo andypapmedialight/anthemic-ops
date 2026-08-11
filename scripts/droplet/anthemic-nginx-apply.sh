@@ -4,7 +4,9 @@
 #     sudo /usr/local/bin/anthemic-nginx-apply.sh
 #
 # Expects /home/deploy/incoming-nginx/sites-available/anthemic-hub.conf
-# Optional self-update from /home/deploy/incoming-nginx/anthemic-nginx-apply.sh
+# Do NOT self-update APPLY_BIN from deploy-writable incoming-nginx (root RCE).
+# Update manually as root when this script changes:
+#   install -m 755 -o root -g root /home/deploy/incoming-nginx/anthemic-nginx-apply.sh /usr/local/bin/anthemic-nginx-apply.sh
 set -euo pipefail
 
 INCOMING=/home/deploy/incoming-nginx/sites-available/anthemic-hub.conf
@@ -14,8 +16,10 @@ TS="$(date +%Y%m%d-%H%M%S)"
 SELF_INCOMING=/home/deploy/incoming-nginx/anthemic-nginx-apply.sh
 APPLY_BIN=/usr/local/bin/anthemic-nginx-apply.sh
 
-if [[ "${EUID:-$(id -u)}" -eq 0 ]] && [[ -f "${SELF_INCOMING}" ]]; then
-  install -o root -g root -m 755 "${SELF_INCOMING}" "${APPLY_BIN}"
+if [[ "${EUID:-$(id -u)}" -eq 0 ]] && [[ -f "${SELF_INCOMING}" ]] && [[ -f "${APPLY_BIN}" ]]; then
+  if ! cmp -s "${SELF_INCOMING}" "${APPLY_BIN}" 2>/dev/null; then
+    echo "anthemic-nginx-apply: WARNING: ${SELF_INCOMING} differs from ${APPLY_BIN}; not auto-updating (install manually as root)" >&2
+  fi
 fi
 
 if [[ ! -f "${INCOMING}" ]]; then
