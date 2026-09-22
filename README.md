@@ -164,13 +164,13 @@ You can also enable GitHub **Settings → Notifications** for workflow failures.
 
 `MMD_FRED_FRESHNESS_CACHE_TTL=300`
 
-## SnakeSpotter (`/snakespotter/`)
+## SnakeSpotter (`snakespot.anthemic-developments.com`)
 
 FastAPI sighting log from the **SnakeSpotter** repo, loopback `127.0.0.1:8075`. No nginx auth.
 
-1. Bootstrap apply script + sudoers from GitHub `main` (SnakeSpotter `scripts/droplet/bootstrap-snakespotter.sh`).
+1. Cloudflare A record + cert via SnakeSpotter `scripts/droplet/bootstrap-snakespotter.sh` **before** pushing this nginx block — missing cert files fail `nginx -t`.
 2. Push SnakeSpotter `main` so GitHub Actions installs `/opt/snakespotter` and `snakespotter.service`.
-3. Push this repo so nginx proxies `/snakespotter/`. Until the service is up, that URL 502s; `nginx -t` still passes.
+3. Push this repo. `GET /health` on the subdomain must be `200`. `/snakespotter/` on the hub host 301s to the subdomain.
 
 `GOOGLE_MAPS_API_KEY` is a SnakeSpotter GitHub secret, written to `/etc/snakespotter/snakespotter.env`. Never put it in this repo.
 
@@ -186,7 +186,7 @@ FastAPI toy tracker from the **AToL** repo, loopback `127.0.0.1:8074`. nginx bas
 
 - [`anthemic-hub`](https://github.com/andypapmedialight/anthemic-hub) - hub at `/` and static **`/bass/`**.
 - [`SetListGenerator`](https://github.com/andypapmedialight/SetListGenerator) - `/setlist/` and `/api/`.
-- [`SnakeSpotter`](https://github.com/andypapmedialight/SnakeSpotter) - `/snakespotter/`, proxied to `snakespotter.service` on `127.0.0.1:8075`.
+- [`SnakeSpotter`](https://github.com/andypapmedialight/SnakeSpotter) - `snakespot.anthemic-developments.com` (own subdomain + cert), proxied to `snakespotter.service` on `127.0.0.1:8075`.
 - [`music-session-tracker`](https://github.com/andypapmedialight/music-session-tracker) - `tracker.anthemic-developments.com` (own subdomain + cert), proxied to `session-tracker.service` on `127.0.0.1:8073`.
 - [`AToL_Toy_ingest`](https://github.com/andypapmedialight/AToL_Toy_ingest) - `atol.anthemic-developments.com` (own subdomain + cert), proxied to `atol.service` on `127.0.0.1:8074`, nginx basic auth `demo`/`demo`.
 - (future) `anthemic-personal` - `/personal/` when ready.
