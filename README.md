@@ -164,9 +164,18 @@ You can also enable GitHub **Settings → Notifications** for workflow failures.
 
 `MMD_FRED_FRESHNESS_CACHE_TTL=300`
 
+## AToL demo (`atol.anthemic-developments.com`)
+
+FastAPI toy tracker from the **AToL** repo, loopback `127.0.0.1:8074`. nginx basic auth is `demo` / `demo` (`/etc/nginx/conf.d/atol.htpasswd`).
+
+1. DNS A record + cert + htpasswd via AToL `scripts/droplet/bootstrap-atol.sh` **before** pushing this nginx block — missing cert files fail `nginx -t`.
+2. Push this repo. Unauthenticated `GET /health` must be `401`.
+3. AToL deploy brings the upstream; `demo:demo` then gets `200`.
+
 ## Related repos
 
 - [`anthemic-hub`](https://github.com/andypapmedialight/anthemic-hub) - hub at `/` and static **`/bass/`**.
 - [`SetListGenerator`](https://github.com/andypapmedialight/SetListGenerator) - `/setlist/` and `/api/`.
 - [`music-session-tracker`](https://github.com/andypapmedialight/music-session-tracker) - `tracker.anthemic-developments.com` (own subdomain + cert), proxied to `session-tracker.service` on `127.0.0.1:8073`.
+- [`AToL_Toy_ingest`](https://github.com/andypapmedialight/AToL_Toy_ingest) - `atol.anthemic-developments.com` (own subdomain + cert), proxied to `atol.service` on `127.0.0.1:8074`, nginx basic auth `demo`/`demo`.
 - (future) `anthemic-personal` - `/personal/` when ready.

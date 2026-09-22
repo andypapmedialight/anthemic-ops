@@ -170,3 +170,7 @@ jobs:
             exit 1
           }
           python3 -c "import json; d=json.load(open('/tmp/anthemic-smoke-fresh.json')); assert len(d.get('series') or {})>=1, d"
+          code_atol=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 \
+            "https://atol.anthemic-developments.com/health" || echo "000")
+          [[ "${code_atol}" == "401" ]] \
+            || { echo "atol.anthemic-developments.com/health returned HTTP ${code_atol} (expected 401; bootstrap htpasswd + cert first)"; exit 1; }
